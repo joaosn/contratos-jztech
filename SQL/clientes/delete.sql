@@ -1,2 +1,3 @@
 DELETE FROM clientes 
-WHERE idcliente = :idcliente;
+WHERE idempresa = :idempresa
+  AND idcliente = :idcliente;

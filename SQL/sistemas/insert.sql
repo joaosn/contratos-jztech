@@ -1,11 +1,13 @@
 INSERT INTO sistemas (
-    nome,
-    categoria,
-    descricao,
-    ativo
+    idempresa
+  , nome
+  , categoria
+  , descricao
+  , ativo
 ) VALUES (
-    :nome,
-    :categoria,
-    :descricao,
-    COALESCE(:ativo, 1)
+    :idempresa
+  , :nome
+  , :categoria
+  , :descricao
+  , COALESCE(:ativo, 1)
 );

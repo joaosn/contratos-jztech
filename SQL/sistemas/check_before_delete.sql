@@ -1,5 +1,7 @@
--- Verifica se sistema possui assinaturas ativas antes da exclusão
-SELECT COUNT(*) as assinaturas_ativas
-FROM assinaturas 
-WHERE idsistema = :idsistema 
-  AND status IN ('ativa', 'trial');
+-- Verifica se sistema pode ser deletado (sem assinaturas ativas)
+SELECT 
+    COUNT(*) AS assinaturas_ativas
+FROM assinaturas a
+WHERE a.idempresa = :idempresa
+  AND a.idsistema = :idsistema 
+  AND a.status IN ('ativa', 'trial');

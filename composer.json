@@ -3,13 +3,8 @@
         "clancats/hydrahon": "^1.1",
         "mpdf/mpdf": "^8.1",
         "endroid/qr-code": "^5.0",
-        "phpmailer/phpmailer": "^6.9",
-        "nfephp-org/sped-nfe": "^5.1",
         "guzzlehttp/guzzle": "^7.8",
-        "ext-soap": "*",
-        "nfephp-org/sped-da": "1.1",
-        "developersrede/erede-php": "^3.0",
-        "nfephp-org/sped-ibpt": "^2.0"
+        "spomky-labs/otphp": "*"
     },
     "autoload": {
         "psr-4": {

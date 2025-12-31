@@ -1,2 +1,3 @@
 DELETE FROM sistemas_planos 
-WHERE idplano = :idplano;
+WHERE idempresa = :idempresa
+  AND idplano = :idplano;

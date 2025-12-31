@@ -1,5 +1,7 @@
--- Verifica se plano possui assinaturas ativas antes da exclusão
-SELECT COUNT(*) as assinaturas_ativas
-FROM assinaturas 
-WHERE idplano = :idplano 
-  AND status IN ('ativa', 'trial');
+-- Verifica se plano pode ser deletado (sem assinaturas usando)
+SELECT 
+    COUNT(*) AS assinaturas_usando
+FROM assinaturas a
+WHERE a.idempresa = :idempresa
+  AND a.idplano = :idplano 
+  AND a.status IN ('ativa', 'trial');

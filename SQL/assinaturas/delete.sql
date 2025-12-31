@@ -1,2 +1,3 @@
 DELETE FROM assinaturas 
-WHERE idassinatura = :idassinatura;
+WHERE idempresa = :idempresa
+  AND idassinatura = :idassinatura;

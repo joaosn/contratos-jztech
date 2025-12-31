@@ -1,4 +1,5 @@
-SELECT COUNT(*) as total
+SELECT COUNT(*) AS total
 FROM clientes c
-WHERE (:ativo IS NULL OR c.ativo = :ativo)
+WHERE c.idempresa = :idempresa
+  AND (:ativo IS NULL OR c.ativo = :ativo)
   AND (:tipo_pessoa IS NULL OR c.tipo_pessoa = :tipo_pessoa);

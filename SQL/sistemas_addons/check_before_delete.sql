@@ -1,7 +1,7 @@
--- Verifica se add-on possui assinaturas ativas antes da exclusão
-SELECT COUNT(*) as assinaturas_ativas
+-- Verifica se addon pode ser deletado (sem assinaturas usando)
+SELECT 
+    COUNT(*) AS assinaturas_usando
 FROM assinaturas_addons aa
-INNER JOIN assinaturas a ON a.idassinatura = aa.idassinatura
-WHERE aa.idaddon = :idaddon 
-  AND aa.ativo = 1
-  AND a.status IN ('ativa', 'trial');
+WHERE aa.idempresa = :idempresa
+  AND aa.idaddon = :idaddon 
+  AND aa.ativo = 1;

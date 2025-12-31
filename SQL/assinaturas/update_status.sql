@@ -1,4 +1,5 @@
--- Atualiza apenas o status da assinatura
 UPDATE assinaturas SET
     status = :status
-WHERE idassinatura = :idassinatura;
+  , atualizado_em = CURRENT_TIMESTAMP
+WHERE idempresa = :idempresa
+  AND idassinatura = :idassinatura;

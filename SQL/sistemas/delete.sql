@@ -1,2 +1,3 @@
 DELETE FROM sistemas 
-WHERE idsistema = :idsistema;
+WHERE idempresa = :idempresa
+  AND idsistema = :idsistema;

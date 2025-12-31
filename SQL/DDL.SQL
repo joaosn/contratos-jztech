@@ -1,252 +1,328 @@
 -- =====================================================================
--- database
--- =====================================================================
-create database if not exists organizaai
-  default character set utf8mb4
-  collate utf8mb4_0900_ai_ci;
-
-use organizaai;
-
--- =====================================================================
--- helpers: domínio pequeno como check (sem tabelas-lookup desnecessárias)
+-- OrganizaAI - DDL Multi-Tenant
+-- Sistema de Gestão de Contratos e Assinaturas
+-- Data: 31/12/2025
 -- =====================================================================
 
--- valores aceitos em varios lugares: 'pf' e 'pj', 'mensal' etc. via CHECK
+CREATE DATABASE IF NOT EXISTS organizaai
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_0900_ai_ci;
+
+USE organizaai;
 
 -- =====================================================================
--- clientes
+-- TABELA: empresa (tenant central)
 -- =====================================================================
-create table clientes (
-  idcliente           bigint unsigned auto_increment
-, tipo_pessoa         varchar(2) not null
-, nome                varchar(160) not null              -- pf: nome completo; pj: razao social
-, nome_fantasia       varchar(160) null                  -- pj opcional
-, cpf_cnpj            varchar(20) not null               -- apenas dígitos ou com máscara, você decide na app
-, ie_rg               varchar(30)  null                  -- inscrição estadual ou RG
-, im                  varchar(30)  null                  -- inscrição municipal
-, email               varchar(160) null
-, telefone            varchar(30)  null
-, data_cadastro       datetime not null default current_timestamp
-, ativo               tinyint(1) not null default 1
+CREATE TABLE empresa (
+  idempresa           BIGINT UNSIGNED AUTO_INCREMENT
+, nome                VARCHAR(160) NOT NULL
+, nome_fantasia       VARCHAR(160) NULL
+, cnpj                VARCHAR(20) NOT NULL
+, email               VARCHAR(160) NULL
+, telefone            VARCHAR(30) NULL
+, ativo               TINYINT(1) NOT NULL DEFAULT 1
+, data_cadastro       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 
-, constraint pk_clientes primary key (idcliente)
-, constraint uq_clientes_cpf_cnpj unique (cpf_cnpj)
-, constraint ck_clientes_tipo check (tipo_pessoa in ('pf','pj'))
-) engine=innodb comment='cadastro de clientes (pf/pj)';
+, CONSTRAINT pk_empresa PRIMARY KEY (idempresa)
+, CONSTRAINT uq_empresa_cnpj UNIQUE (cnpj)
+) ENGINE=InnoDB COMMENT='Tenant central - cada empresa é um tenant isolado';
 
-create index ix_clientes_nome on clientes (nome);
-create index ix_clientes_ativo on clientes (ativo);
+CREATE INDEX ix_empresa_ativo ON empresa (ativo);
 
 -- =====================================================================
--- enderecos do cliente (n:1)
+-- TABELA: usuarios (com 2FA)
 -- =====================================================================
-create table clientes_enderecos (
-  idendereco          bigint unsigned auto_increment
-, idcliente           bigint unsigned not null
-, tipo                varchar(20) not null               -- 'principal','cobranca','instalacao' (livre)
-, logradouro          varchar(180) not null
-, numero              varchar(20)  null
-, complemento         varchar(100) null
-, bairro              varchar(100) null
-, cidade              varchar(120) not null
-, uf                  char(2) not null
-, cep                 varchar(15)  null
-, pais                varchar(60)  not null default 'BR'
-, principal           tinyint(1) not null default 0
+CREATE TABLE usuarios (
+  idusuario           BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, nome                VARCHAR(160) NOT NULL
+, email               VARCHAR(160) NOT NULL
+, senha_hash          VARCHAR(255) NOT NULL
+, token               VARCHAR(64) NULL
+, tema                VARCHAR(20) NOT NULL DEFAULT 'dark'
+, ativo               TINYINT(1) NOT NULL DEFAULT 1
+, totp_habilitado     TINYINT(1) NOT NULL DEFAULT 0
+, totp_secret         VARCHAR(100) NULL
+, ultimo_login        DATETIME NULL
+, criado_em           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+, atualizado_em       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-, constraint pk_clientes_enderecos primary key (idendereco)
-, constraint fk_enderecos_clientes
-    foreign key (idcliente) references clientes (idcliente)
-    on update cascade on delete cascade
-) engine=innodb comment='endereços do cliente';
+, CONSTRAINT pk_usuarios PRIMARY KEY (idusuario)
+, CONSTRAINT uq_usuarios_email UNIQUE (email)
+, CONSTRAINT fk_usuarios_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='Usuários do sistema com suporte a 2FA';
 
-create index ix_enderecos_cliente on clientes_enderecos (idcliente, principal desc);
-
--- =====================================================================
--- contatos do cliente (n:1)
--- =====================================================================
-create table clientes_contatos (
-  idcontato           bigint unsigned auto_increment
-, idcliente           bigint unsigned not null
-, nome                varchar(120) not null
-, email               varchar(160) null
-, telefone            varchar(30)  null
-, cargo               varchar(80)  null
-, principal           tinyint(1) not null default 0
-
-, constraint pk_clientes_contatos primary key (idcontato)
-, constraint fk_contatos_clientes
-    foreign key (idcliente) references clientes (idcliente)
-    on update cascade on delete cascade
-) engine=innodb comment='contatos do cliente';
-
-create index ix_contatos_cliente on clientes_contatos (idcliente, principal desc);
+CREATE INDEX ix_usuarios_empresa ON usuarios (idempresa, ativo);
+CREATE INDEX ix_usuarios_token ON usuarios (token);
+CREATE INDEX ix_usuarios_email ON usuarios (email);
 
 -- =====================================================================
--- sistemas ofertados (catálogo)
+-- TABELA: clientes
 -- =====================================================================
-create table sistemas (
-  idsistema           bigint unsigned auto_increment
-, nome                varchar(120) not null
-, categoria           varchar(60)  null                  -- ex: 'erp','delivery','site'
-, descricao           text         null
-, ativo               tinyint(1)   not null default 1
+CREATE TABLE clientes (
+  idcliente           BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, tipo_pessoa         VARCHAR(2) NOT NULL
+, nome                VARCHAR(160) NOT NULL
+, nome_fantasia       VARCHAR(160) NULL
+, cpf_cnpj            VARCHAR(20) NOT NULL
+, ie_rg               VARCHAR(30) NULL
+, im                  VARCHAR(30) NULL
+, email               VARCHAR(160) NULL
+, telefone            VARCHAR(30) NULL
+, data_cadastro       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+, ativo               TINYINT(1) NOT NULL DEFAULT 1
 
-, constraint pk_sistemas primary key (idsistema)
-, constraint uq_sistemas_nome unique (nome)
-) engine=innodb comment='catálogo de sistemas/produtos de software';
+, CONSTRAINT pk_clientes PRIMARY KEY (idcliente)
+, CONSTRAINT uq_clientes_empresa_cpf UNIQUE (idempresa, cpf_cnpj)
+, CONSTRAINT fk_clientes_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT ck_clientes_tipo CHECK (tipo_pessoa IN ('pf','pj'))
+) ENGINE=InnoDB COMMENT='Cadastro de clientes (PF/PJ) por empresa';
 
-create index ix_sistemas_ativo on sistemas (ativo);
-
--- =====================================================================
--- planos do sistema (preço base + impostos padrão)
--- =====================================================================
-create table sistemas_planos (
-  idplano             bigint unsigned auto_increment
-, idsistema           bigint unsigned not null
-, nome                varchar(120) not null              -- ex: 'starter','pro','enterprise'
-, descricao           text null
-, ciclo_cobranca      varchar(12) not null               -- 'mensal','trimestral','semestral','anual'
-, preco_base_sem_imposto decimal(12,2) not null default 0.00
-, aliquota_imposto_percent decimal(5,2) not null default 0.00  -- ex: 5.00 = 5%
-, preco_base_com_imposto decimal(12,2) as
-    (round(preco_base_sem_imposto * (1 + (aliquota_imposto_percent/100)), 2)) stored
-, ativo               tinyint(1) not null default 1
-
-, constraint pk_sistemas_planos primary key (idplano)
-, constraint fk_planos_sistemas
-    foreign key (idsistema) references sistemas (idsistema)
-    on update cascade on delete restrict
-, constraint ck_planos_ciclo check (ciclo_cobranca in ('mensal','trimestral','semestral','anual'))
-) engine=innodb comment='planos de cada sistema (preço base e alíquota padrão)';
-
-create index ix_planos_sistema on sistemas_planos (idsistema, ativo);
+CREATE INDEX ix_clientes_empresa_nome ON clientes (idempresa, nome);
+CREATE INDEX ix_clientes_empresa_ativo ON clientes (idempresa, ativo);
+CREATE INDEX ix_clientes_empresa_cpf ON clientes (idempresa, cpf_cnpj);
 
 -- =====================================================================
--- add-ons opcionais (ex: módulo fiscal, usuários extras)
+-- TABELA: clientes_enderecos
 -- =====================================================================
-create table sistemas_addons (
-  idaddon             bigint unsigned auto_increment
-, idsistema           bigint unsigned not null
-, nome                varchar(120) not null              -- ex: 'modulo_fiscal','usuarios_extras'
-, descricao           text null
-, preco_sem_imposto   decimal(12,2) not null default 0.00
-, aliquota_imposto_percent decimal(5,2) not null default 0.00
-, preco_com_imposto   decimal(12,2) as
-    (round(preco_sem_imposto * (1 + (aliquota_imposto_percent/100)), 2)) stored
-, ativo               tinyint(1) not null default 1
+CREATE TABLE clientes_enderecos (
+  idendereco          BIGINT UNSIGNED AUTO_INCREMENT
+, idcliente           BIGINT UNSIGNED NOT NULL
+, tipo                VARCHAR(20) NOT NULL
+, logradouro          VARCHAR(180) NOT NULL
+, numero              VARCHAR(20) NULL
+, complemento         VARCHAR(100) NULL
+, bairro              VARCHAR(100) NULL
+, cidade              VARCHAR(120) NOT NULL
+, uf                  CHAR(2) NOT NULL
+, cep                 VARCHAR(15) NULL
+, pais                VARCHAR(60) NOT NULL DEFAULT 'BR'
+, principal           TINYINT(1) NOT NULL DEFAULT 0
 
-, constraint pk_sistemas_addons primary key (idaddon)
-, constraint fk_addons_sistemas
-    foreign key (idsistema) references sistemas (idsistema)
-    on update cascade on delete restrict
-) engine=innodb comment='opcionais cobrados à parte';
+, CONSTRAINT pk_clientes_enderecos PRIMARY KEY (idendereco)
+, CONSTRAINT fk_enderecos_clientes
+    FOREIGN KEY (idcliente) REFERENCES clientes (idcliente)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Endereços do cliente';
 
-create index ix_addons_sistema on sistemas_addons (idsistema, ativo);
+CREATE INDEX ix_enderecos_cliente ON clientes_enderecos (idcliente, principal DESC);
 
 -- =====================================================================
--- assinaturas do cliente
---  - pode usar um plano como base OU preço customizado (override)
---  - preco_* na assinatura permitem travar valor negociado por cliente
+-- TABELA: clientes_contatos
 -- =====================================================================
-create table assinaturas (
-  idassinatura        bigint unsigned auto_increment
-, idcliente           bigint unsigned not null
-, idsistema           bigint unsigned not null
-, idplano             bigint unsigned null                -- pode ser null em caso 100% custom
-, ciclo_cobranca      varchar(12) not null                -- redundância útil p/ travar contrato
-, dia_vencimento      tinyint unsigned not null default 5 -- 1..28
-, data_inicio         date not null
-, data_fim            date null
-, status              varchar(12) not null default 'ativa' -- 'ativa','suspensa','cancelada','trial'
+CREATE TABLE clientes_contatos (
+  idcontato           BIGINT UNSIGNED AUTO_INCREMENT
+, idcliente           BIGINT UNSIGNED NOT NULL
+, nome                VARCHAR(120) NOT NULL
+, email               VARCHAR(160) NULL
+, telefone            VARCHAR(30) NULL
+, cargo               VARCHAR(80) NULL
+, principal           TINYINT(1) NOT NULL DEFAULT 0
 
--- valores negociados (override). se null, herda do plano
-, preco_sem_imposto   decimal(12,2) null
-, aliquota_imposto_percent decimal(5,2) null
-, preco_com_imposto   decimal(12,2) as (
-    round(
-      coalesce(preco_sem_imposto,    (select p.preco_base_sem_imposto from sistemas_planos p where p.idplano = idplano))
-      * (1 + (coalesce(aliquota_imposto_percent, (select p.aliquota_imposto_percent from sistemas_planos p where p.idplano = idplano))/100))
+, CONSTRAINT pk_clientes_contatos PRIMARY KEY (idcontato)
+, CONSTRAINT fk_contatos_clientes
+    FOREIGN KEY (idcliente) REFERENCES clientes (idcliente)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Contatos do cliente';
+
+CREATE INDEX ix_contatos_cliente ON clientes_contatos (idcliente, principal DESC);
+
+-- =====================================================================
+-- TABELA: sistemas (catálogo por empresa)
+-- =====================================================================
+CREATE TABLE sistemas (
+  idsistema           BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, nome                VARCHAR(120) NOT NULL
+, categoria           VARCHAR(60) NULL
+, descricao           TEXT NULL
+, ativo               TINYINT(1) NOT NULL DEFAULT 1
+
+, CONSTRAINT pk_sistemas PRIMARY KEY (idsistema)
+, CONSTRAINT uq_sistemas_empresa_nome UNIQUE (idempresa, nome)
+, CONSTRAINT fk_sistemas_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='Catálogo de sistemas/produtos de software por empresa';
+
+CREATE INDEX ix_sistemas_empresa_ativo ON sistemas (idempresa, ativo);
+CREATE INDEX ix_sistemas_empresa_categoria ON sistemas (idempresa, categoria);
+
+-- =====================================================================
+-- TABELA: sistemas_planos
+-- =====================================================================
+CREATE TABLE sistemas_planos (
+  idplano             BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, idsistema           BIGINT UNSIGNED NOT NULL
+, nome                VARCHAR(120) NOT NULL
+, descricao           TEXT NULL
+, ciclo_cobranca      VARCHAR(12) NOT NULL
+, preco_base_sem_imposto DECIMAL(12,2) NOT NULL DEFAULT 0.00
+, aliquota_imposto_percent DECIMAL(5,2) NOT NULL DEFAULT 0.00
+, preco_base_com_imposto DECIMAL(12,2) AS
+    (ROUND(preco_base_sem_imposto * (1 + (aliquota_imposto_percent/100)), 2)) STORED
+, ativo               TINYINT(1) NOT NULL DEFAULT 1
+
+, CONSTRAINT pk_sistemas_planos PRIMARY KEY (idplano)
+, CONSTRAINT fk_planos_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT fk_planos_sistemas
+    FOREIGN KEY (idsistema) REFERENCES sistemas (idsistema)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT ck_planos_ciclo CHECK (ciclo_cobranca IN ('mensal','trimestral','semestral','anual'))
+) ENGINE=InnoDB COMMENT='Planos de cada sistema (preço base e alíquota padrão)';
+
+CREATE INDEX ix_planos_empresa_sistema ON sistemas_planos (idempresa, idsistema, ativo);
+CREATE INDEX ix_planos_empresa_ativo ON sistemas_planos (idempresa, ativo);
+
+-- =====================================================================
+-- TABELA: sistemas_addons
+-- =====================================================================
+CREATE TABLE sistemas_addons (
+  idaddon             BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, idsistema           BIGINT UNSIGNED NOT NULL
+, nome                VARCHAR(120) NOT NULL
+, descricao           TEXT NULL
+, preco_sem_imposto   DECIMAL(12,2) NOT NULL DEFAULT 0.00
+, aliquota_imposto_percent DECIMAL(5,2) NOT NULL DEFAULT 0.00
+, preco_com_imposto   DECIMAL(12,2) AS
+    (ROUND(preco_sem_imposto * (1 + (aliquota_imposto_percent/100)), 2)) STORED
+, ativo               TINYINT(1) NOT NULL DEFAULT 1
+
+, CONSTRAINT pk_sistemas_addons PRIMARY KEY (idaddon)
+, CONSTRAINT fk_addons_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT fk_addons_sistemas
+    FOREIGN KEY (idsistema) REFERENCES sistemas (idsistema)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='Add-ons opcionais cobrados à parte';
+
+CREATE INDEX ix_addons_empresa_sistema ON sistemas_addons (idempresa, idsistema, ativo);
+CREATE INDEX ix_addons_empresa_ativo ON sistemas_addons (idempresa, ativo);
+
+-- =====================================================================
+-- TABELA: assinaturas
+-- =====================================================================
+CREATE TABLE assinaturas (
+  idassinatura        BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, idcliente           BIGINT UNSIGNED NOT NULL
+, idsistema           BIGINT UNSIGNED NOT NULL
+, idplano             BIGINT UNSIGNED NULL
+, ciclo_cobranca      VARCHAR(12) NOT NULL
+, dia_vencimento      TINYINT UNSIGNED NOT NULL DEFAULT 5
+, data_inicio         DATE NOT NULL
+, data_fim            DATE NULL
+, status              VARCHAR(12) NOT NULL DEFAULT 'ativa'
+, preco_sem_imposto   DECIMAL(12,2) NULL
+, aliquota_imposto_percent DECIMAL(5,2) NULL
+, preco_com_imposto   DECIMAL(12,2) AS (
+    ROUND(
+      COALESCE(preco_sem_imposto, (SELECT p.preco_base_sem_imposto FROM sistemas_planos p WHERE p.idplano = idplano))
+      * (1 + (COALESCE(aliquota_imposto_percent, (SELECT p.aliquota_imposto_percent FROM sistemas_planos p WHERE p.idplano = idplano))/100))
     , 2)
-  ) stored
+  ) STORED
+, observacoes         VARCHAR(400) NULL
+, criado_em           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+, atualizado_em       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 
-, observacoes         varchar(400) null
-, criado_em           datetime not null default current_timestamp
-, atualizado_em       datetime not null default current_timestamp on update current_timestamp
+, CONSTRAINT pk_assinaturas PRIMARY KEY (idassinatura)
+, CONSTRAINT fk_assinaturas_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT fk_assinaturas_clientes
+    FOREIGN KEY (idcliente) REFERENCES clientes (idcliente)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT fk_assinaturas_sistemas
+    FOREIGN KEY (idsistema) REFERENCES sistemas (idsistema)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT fk_assinaturas_plano
+    FOREIGN KEY (idplano) REFERENCES sistemas_planos (idplano)
+    ON UPDATE CASCADE ON DELETE SET NULL
+, CONSTRAINT ck_assinaturas_status CHECK (status IN ('ativa','suspensa','cancelada','trial'))
+, CONSTRAINT ck_assinaturas_ciclo CHECK (ciclo_cobranca IN ('mensal','trimestral','semestral','anual'))
+, CONSTRAINT ck_assinaturas_dia CHECK (dia_vencimento BETWEEN 1 AND 28)
+) ENGINE=InnoDB COMMENT='Contratos de assinatura por cliente';
 
-, constraint pk_assinaturas primary key (idassinatura)
-, constraint fk_assinaturas_clientes
-    foreign key (idcliente) references clientes (idcliente)
-    on update cascade on delete restrict
-, constraint fk_assinaturas_sistemas
-    foreign key (idsistema) references sistemas (idsistema)
-    on update cascade on delete restrict
-, constraint fk_assinaturas_plano
-    foreign key (idplano) references sistemas_planos (idplano)
-    on update cascade on delete set null
-, constraint ck_assinaturas_status check (status in ('ativa','suspensa','cancelada','trial'))
-, constraint ck_assinaturas_ciclo  check (ciclo_cobranca in ('mensal','trimestral','semestral','anual'))
-, constraint ck_assinaturas_dia     check (dia_vencimento between 1 and 28)
-) engine=innodb comment='contratos de assinatura por cliente';
-
-create index ix_assinaturas_cliente on assinaturas (idcliente, status);
-create index ix_assinaturas_sistema on assinaturas (idsistema, status);
+CREATE INDEX ix_assinaturas_empresa_cliente ON assinaturas (idempresa, idcliente, status);
+CREATE INDEX ix_assinaturas_empresa_sistema ON assinaturas (idempresa, idsistema, status);
+CREATE INDEX ix_assinaturas_empresa_status ON assinaturas (idempresa, status);
+CREATE INDEX ix_assinaturas_empresa_vencimento ON assinaturas (idempresa, data_fim);
 
 -- =====================================================================
--- add-ons contratados por assinatura
+-- TABELA: assinaturas_addons
 -- =====================================================================
-create table assinaturas_addons (
-  idassinatura_addon  bigint unsigned auto_increment
-, idassinatura        bigint unsigned not null
-, idaddon             bigint unsigned not null
-, quantidade          int unsigned not null default 1
-, preco_sem_imposto   decimal(12,2) null                 -- override; se null, usa do addon
-, aliquota_imposto_percent decimal(5,2) null
-, preco_com_imposto   decimal(12,2) as (
-    round(
-      coalesce(preco_sem_imposto,    (select a.preco_sem_imposto from sistemas_addons a where a.idaddon = idaddon))
-      * (1 + (coalesce(aliquota_imposto_percent,(select a.aliquota_imposto_percent from sistemas_addons a where a.idaddon = idaddon))/100))
+CREATE TABLE assinaturas_addons (
+  idassinatura_addon  BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, idassinatura        BIGINT UNSIGNED NOT NULL
+, idaddon             BIGINT UNSIGNED NOT NULL
+, quantidade          INT UNSIGNED NOT NULL DEFAULT 1
+, preco_sem_imposto   DECIMAL(12,2) NULL
+, aliquota_imposto_percent DECIMAL(5,2) NULL
+, preco_com_imposto   DECIMAL(12,2) AS (
+    ROUND(
+      COALESCE(preco_sem_imposto, (SELECT a.preco_sem_imposto FROM sistemas_addons a WHERE a.idaddon = idaddon))
+      * (1 + (COALESCE(aliquota_imposto_percent, (SELECT a.aliquota_imposto_percent FROM sistemas_addons a WHERE a.idaddon = idaddon))/100))
     , 2)
-  ) stored
-, ativo               tinyint(1) not null default 1
+  ) STORED
+, ativo               TINYINT(1) NOT NULL DEFAULT 1
 
-, constraint pk_assinaturas_addons primary key (idassinatura_addon)
-, constraint fk_assinaturas_addons_assinatura
-    foreign key (idassinatura) references assinaturas (idassinatura)
-    on update cascade on delete cascade
-, constraint fk_assinaturas_addons_addon
-    foreign key (idaddon) references sistemas_addons (idaddon)
-    on update cascade on delete restrict
-) engine=innodb comment='itens adicionais contratados em cada assinatura';
+, CONSTRAINT pk_assinaturas_addons PRIMARY KEY (idassinatura_addon)
+, CONSTRAINT fk_ass_addons_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT fk_assinaturas_addons_assinatura
+    FOREIGN KEY (idassinatura) REFERENCES assinaturas (idassinatura)
+    ON UPDATE CASCADE ON DELETE CASCADE
+, CONSTRAINT fk_assinaturas_addons_addon
+    FOREIGN KEY (idaddon) REFERENCES sistemas_addons (idaddon)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB COMMENT='Add-ons contratados em cada assinatura';
 
-create unique index uq_assinaturas_addon_unique
-  on assinaturas_addons (idassinatura, idaddon);
-
--- =====================================================================
--- historico de precificacao (auditoria leve)
--- =====================================================================
-create table precos_historico (
-  idpreco_hist        bigint unsigned auto_increment
-, referencia_tipo     varchar(12) not null               -- 'plano','assinatura','addon','assinatura_addon'
-, referencia_id       bigint unsigned not null
-, campo               varchar(40)  not null              -- 'preco_sem_imposto','aliquota_imposto_percent'
-, valor_antigo        decimal(12,2) null
-, valor_novo          decimal(12,2) null
-, alterado_em         datetime not null default current_timestamp
-, alterado_por        varchar(80)  null                  -- user/app que alterou
-
-, constraint pk_precos_historico primary key (idpreco_hist)
-, constraint ck_hist_referencia check (referencia_tipo in ('plano','assinatura','addon','assinatura_addon'))
-) engine=innodb comment='auditoria simples de mudanças de preço/aliquota';
-
-create index ix_hist_ref on precos_historico (referencia_tipo, referencia_id, alterado_em desc);
+CREATE UNIQUE INDEX uq_ass_addons_empresa ON assinaturas_addons (idempresa, idassinatura, idaddon);
+CREATE INDEX ix_ass_addons_empresa ON assinaturas_addons (idempresa, idassinatura);
 
 -- =====================================================================
--- visao util: valores atuais da assinatura (com e sem imposto)
+-- TABELA: precos_historico (auditoria)
 -- =====================================================================
-create or replace view v_assinaturas_resumo as
-select
+CREATE TABLE precos_historico (
+  idpreco_hist        BIGINT UNSIGNED AUTO_INCREMENT
+, idempresa           BIGINT UNSIGNED NOT NULL
+, referencia_tipo     VARCHAR(20) NOT NULL
+, referencia_id       BIGINT UNSIGNED NOT NULL
+, campo               VARCHAR(40) NOT NULL
+, valor_antigo        DECIMAL(12,2) NULL
+, valor_novo          DECIMAL(12,2) NULL
+, alterado_em         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+, alterado_por        VARCHAR(80) NULL
+
+, CONSTRAINT pk_precos_historico PRIMARY KEY (idpreco_hist)
+, CONSTRAINT fk_historico_empresa
+    FOREIGN KEY (idempresa) REFERENCES empresa (idempresa)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+, CONSTRAINT ck_hist_referencia CHECK (referencia_tipo IN ('plano','assinatura','addon','assinatura_addon'))
+) ENGINE=InnoDB COMMENT='Auditoria de mudanças de preço/alíquota';
+
+CREATE INDEX ix_hist_empresa_ref ON precos_historico (idempresa, referencia_tipo, referencia_id, alterado_em DESC);
+CREATE INDEX ix_hist_empresa_data ON precos_historico (idempresa, alterado_em DESC);
+
+-- =====================================================================
+-- VIEW: v_assinaturas_resumo
+-- =====================================================================
+CREATE OR REPLACE VIEW v_assinaturas_resumo AS
+SELECT
   a.idassinatura
+, a.idempresa
 , a.idcliente
 , a.idsistema
 , a.idplano
@@ -255,30 +331,42 @@ select
 , a.dia_vencimento
 , a.data_inicio
 , a.data_fim
-, coalesce(a.preco_sem_imposto, p.preco_base_sem_imposto)      as preco_sem_imposto
-, coalesce(a.aliquota_imposto_percent, p.aliquota_imposto_percent) as aliquota_imposto_percent
-, a.preco_com_imposto                                           as preco_com_imposto
-from assinaturas a
-left join sistemas_planos p on p.idplano = a.idplano;
+, COALESCE(a.preco_sem_imposto, p.preco_base_sem_imposto) AS preco_sem_imposto
+, COALESCE(a.aliquota_imposto_percent, p.aliquota_imposto_percent) AS aliquota_imposto_percent
+, a.preco_com_imposto
+FROM assinaturas a
+LEFT JOIN sistemas_planos p ON p.idplano = a.idplano;
 
--- opcional: somar add-ons
-create or replace view v_assinaturas_total_mensal as
-select
+-- =====================================================================
+-- VIEW: v_assinaturas_total_mensal
+-- =====================================================================
+CREATE OR REPLACE VIEW v_assinaturas_total_mensal AS
+SELECT
   a.idassinatura
+, a.idempresa
 , a.idcliente
 , a.idsistema
 , a.status
 , a.ciclo_cobranca
-, round(
-    (select coalesce(v.preco_com_imposto,0)
-       from v_assinaturas_resumo v
-      where v.idassinatura = a.idassinatura)
+, ROUND(
+    (SELECT COALESCE(v.preco_com_imposto, 0)
+       FROM v_assinaturas_resumo v
+      WHERE v.idassinatura = a.idassinatura)
     +
-    coalesce((
-      select sum(aa.preco_com_imposto * aa.quantidade)
-        from assinaturas_addons aa
-       where aa.idassinatura = a.idassinatura
-         and aa.ativo = 1
-    ),0)
-  ,2) as total_com_imposto
-from assinaturas a;
+    COALESCE((
+      SELECT SUM(aa.preco_com_imposto * aa.quantidade)
+        FROM assinaturas_addons aa
+       WHERE aa.idassinatura = a.idassinatura
+         AND aa.ativo = 1
+    ), 0)
+  , 2) AS total_com_imposto
+FROM assinaturas a;
+
+-- =====================================================================
+-- DADOS INICIAIS: Empresa e Usuário Admin
+-- =====================================================================
+INSERT INTO empresa (nome, cnpj, ativo) VALUES ('JZTech', '00000000000000', 1);
+
+INSERT INTO usuarios (idempresa, nome, email, senha_hash, ativo) 
+VALUES (1, 'Administrador', 'admin@jztech.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
+-- Senha padrão: password (trocar após primeiro login)

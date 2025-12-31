@@ -1,135 +1,148 @@
-# 📦 clickjoias - Ambiente Docker
+# 🎯 OrganizaAI - Sistema de Gestão de Contratos e Assinaturas
 
-Este projeto utiliza Docker para rodar a aplicação PHP com Apache e Composer de forma isolada e reaproveitável. A ideia é usar **uma única imagem Docker compartilhada entre múltiplos projetos** como `papelzero`, `clickjoias`, `cobrafacil`, etc.
+Sistema multi-tenant para gerenciamento de contratos, assinaturas de software e clientes.
 
----
+## 📋 Visão Geral
 
-## 🚀 Como funciona
+O **OrganizaAI** é uma plataforma completa para gestão de:
+- **Empresas** (multi-tenant)
+- **Clientes** (PF/PJ com múltiplos endereços e contatos)
+- **Sistemas/Softwares** (catálogo com planos e add-ons)
+- **Assinaturas** (contratos com preços negociados, ciclos de cobrança)
+- **Auditoria de Preços** (histórico de alterações)
 
-- A imagem base `api_mvc:latest` é criada **uma única vez**.
-- Cada projeto apenas usa essa imagem via `docker-compose.yml`.
-- O container `composer` é utilizado para rodar `composer install` quando necessário.
+## 🏗️ Arquitetura
 
----
+```
+├── core/                  # Framework base (MVC)
+│   ├── Auth.php          # Autenticação com 2FA
+│   ├── Controller.php    # Base controller
+│   ├── Database.php      # Conexão e switchParams()
+│   ├── Model.php         # Base model
+│   └── Router.php        # Sistema de rotas
+├── src/
+│   ├── controllers/      # Controllers HTTP
+│   ├── handlers/         # Lógica de negócio
+│   ├── models/           # Acesso a dados
+│   └── views/            # Templates PHP/HTML
+├── SQL/                   # Queries parametrizadas
+│   ├── empresa/          # CRUD empresa
+│   ├── usuarios/         # CRUD usuarios + 2FA
+│   ├── clientes/         # CRUD clientes
+│   ├── sistemas/         # CRUD sistemas
+│   ├── assinaturas/      # CRUD assinaturas
+│   └── relatorios/       # Views e relatórios
+└── docs/                  # Documentação
+```
 
-## 🐳 Como rodar o projeto
+## 🚀 Início Rápido
 
-### 1. Construir a imagem base (somente uma vez)
-acessar onde esta seu Dockerfile e rode:
+### 1. Requisitos
+- PHP 8.1+
+- MySQL 8.0+
+- Composer
+- Docker (opcional)
+
+### 2. Instalação
+
 ```bash
+# Clonar repositório
+git clone <repo-url>
+cd contratos-jztech
+
+# Instalar dependências
+composer install
+
+# Configurar ambiente
+cp .env.example .env
+# Editar .env com credenciais do banco
+
+# Criar banco de dados
+mysql -u root -p < SQL/DDL.SQL
+```
+
+### 3. Docker (Alternativa)
+
+```bash
+# Construir imagem
 docker build -t api_mvc:latest .
-```
 
-> Faça isso em um projeto base (pode ser qualquer um).
-
-### 2. Subir o projeto atual (ex: PapelZero)
-```bash
+# Subir containers
 docker-compose up -d
-```
 
-### 3. Rodar o Composer manualmente (opcional)
-```bash
+# Instalar dependências
 docker-compose run --rm composer composer install
 ```
 
----
+### 4. Acessar
 
-## 📁 Estrutura recomendada
+- **Aplicação**: http://localhost:8003
+- **Login**: Criar usuário no banco
 
-Cada projeto pode ter sua própria pasta com esse `docker-compose.yml`: 
-lenbre-se de mudar porta caso queria rodar varios
+## 🔐 Autenticação
 
-```yaml
-version: "3.8"
+O sistema utiliza autenticação baseada em sessão com suporte a **2FA (Two-Factor Authentication)**:
 
-services:
-  papelzero:
-    image: api_mvc:latest
-    container_name: papelzero
-    volumes:
-      - ./:/var/www/html
-    ports:
-      - "8085:80"
-  composer:
-    image: composer/composer
-    command: install
-    volumes:
-      - ./:/app
+1. Login com email/senha
+2. Se 2FA habilitado: código TOTP (Google Authenticator, Authy, etc.)
+3. Token armazenado em sessão e banco (validação tripla)
+
+## 📊 Banco de Dados
+
+### Entidades Principais
+
+| Tabela | Descrição |
+|--------|-----------|
+| `empresa` | Tenant central (multi-tenancy) |
+| `usuarios` | Usuários do sistema com 2FA |
+| `clientes` | Clientes PF/PJ |
+| `clientes_enderecos` | Endereços dos clientes |
+| `clientes_contatos` | Contatos dos clientes |
+| `sistemas` | Catálogo de softwares |
+| `sistemas_planos` | Planos de cada sistema |
+| `sistemas_addons` | Módulos opcionais |
+| `assinaturas` | Contratos de assinatura |
+| `assinaturas_addons` | Add-ons contratados |
+| `precos_historico` | Auditoria de preços |
+
+### Multi-Tenancy
+
+Todas as tabelas possuem `idempresa` para isolamento de dados:
+- Índices compostos `(idempresa, campo)` para queries rápidas
+- FKs para integridade referencial
+- Filtro automático por empresa logada
+
+## 📖 Documentação
+
+- [Quick Start](docs/QUICK_START.md)
+- [Plano de Ação API](docs/api/PLANO_ACAO_API.md)
+- [Plano de Ação Frontend](docs/frontend/PLANO_ACAO_FRONTEND.md)
+- [Checklist de Implementação](docs/CHECKLIST_IMPLEMENTACAO.md)
+
+## 🛠️ Desenvolvimento
+
+### Padrão MVC + Handler
 
 ```
-
-```yaml
-version: "3.8"
-
-services:
-  clickjoias:
-    image: api_mvc:latest
-    container_name: clickjoias
-    volumes:
-      - ./:/var/www/html
-    ports:
-      - "8086:80"
-  composer:
-    image: composer/composer
-    command: install
-    volumes:
-      - ./:/app
-
+Request → Router → Controller → Handler → Model → SQL File → Database
+                                    ↓
+                              Response JSON
 ```
 
----
+### Regra Fundamental: Database::switchParams()
 
-## 🧠 Dicas úteis
+```php
+// ✅ CORRETO - Sempre usar switchParams
+$resultado = Database::switchParams(
+    ['idempresa' => $idempresa, 'idcliente' => $id],
+    'clientes/select_by_id',
+    true
+);
 
-### pra acessar banco rodando fora do container coloque seu IPv4 da maquina 
-EX:  DB_HOST = '192.168.1.12'
-
-### Ver containers ativos
-```bash
-docker ps
+// ❌ ERRADO - Nunca usar PDO direto
+$stmt = $pdo->prepare("SELECT * FROM clientes WHERE id = :id");
 ```
 
-### Ver imagens locais
-```bash
-docker images
-```
+## 📝 Licença
 
-### Deletar um container (mantendo a imagem)
-```bash
-docker rm -f nome_do_container
-```
-
-### Deletar imagem (só se quiser realmente limpar tudo)
-```bash
-docker rmi api_mvc:latest
-```
-
----
-
-## ✅ Vantagens
-
-- Zero repetição de build entre projetos
-- Containers organizados por projeto
-- Composer desacoplado para rodar só quando quiser
-
----
-
-Feito com 💙 para acelerar seus projetos PHP com Docker.
-
-> Nome do sistema: **clickjoias**
-> Missão: **Mini ERP mais facil do brasil**
-
-## Endpoint de Impressão de Etiquetas
-
-- **POST /printEtiqueta**
-  - Parâmetros no corpo: `idproduto`, `idetiqueta`.
-  - Retorna: `{ zpl: "<comandos ZPL>" }`.
-
-Exemplo de modelo de etiqueta (campo `template_zpl`):
-```
-^XA
-^FO20,20^ADN,36,20^FD{{nome_produto}}^FS
-^BY2,2,50^FO20,70^BC^FD{{codigo_barras}}^FS
-^FO20,140^ADN,28,14^FDPreço: {{preco}}^FS
-^XZ
-```
+Proprietário - JZTech © 2025

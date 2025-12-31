@@ -1,34 +1,19 @@
--- Assinaturas vencendo nos próximos X dias
 SELECT 
-    a.idassinatura,
-    a.idcliente,
-    a.idsistema,
-    a.ciclo_cobranca,
-    a.dia_vencimento,
-    ADDDATE(
-        DATE_SUB(NOW(), INTERVAL DAY(NOW()) - :dia_vencimento DAY),
-        IF(DAY(NOW()) > :dia_vencimento, INTERVAL 1 MONTH, INTERVAL 0 MONTH)
-    ) as proxima_data_vencimento,
-    a.preco_com_imposto,
-    a.status,
-    c.nome as cliente_nome,
-    s.nome as sistema_nome
+    a.idassinatura
+  , a.idempresa
+  , a.idcliente
+  , a.idsistema
+  , a.data_fim
+  , a.preco_com_imposto
+  , c.nome AS nome_cliente
+  , c.email AS email_cliente
+  , s.nome AS nome_sistema
+  , DATEDIFF(a.data_fim, CURDATE()) AS dias_para_vencer
 FROM assinaturas a
-INNER JOIN clientes c ON c.idcliente = a.idcliente
-INNER JOIN sistemas s ON s.idsistema = a.idsistema
-WHERE a.status = 'ativa'
-  AND DATEDIFF(
-      ADDDATE(
-          DATE_SUB(NOW(), INTERVAL DAY(NOW()) - :dia_vencimento DAY),
-          IF(DAY(NOW()) > :dia_vencimento, INTERVAL 1 MONTH, INTERVAL 0 MONTH)
-      ),
-      CURDATE()
-  ) <= :dias
-  AND DATEDIFF(
-      ADDDATE(
-          DATE_SUB(NOW(), INTERVAL DAY(NOW()) - :dia_vencimento DAY),
-          IF(DAY(NOW()) > :dia_vencimento, INTERVAL 1 MONTH, INTERVAL 0 MONTH)
-      ),
-      CURDATE()
-  ) > 0
-ORDER BY proxima_data_vencimento ASC;
+  INNER JOIN clientes c ON c.idcliente = a.idcliente
+  INNER JOIN sistemas s ON s.idsistema = a.idsistema
+WHERE a.idempresa = :idempresa
+  AND a.status = 'ativa'
+  AND a.data_fim IS NOT NULL
+  AND a.data_fim BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :dias DAY)
+ORDER BY a.data_fim;

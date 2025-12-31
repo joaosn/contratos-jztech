@@ -1,6 +1,7 @@
 UPDATE sistemas SET
-    nome = :nome,
-    categoria = :categoria,
-    descricao = :descricao,
-    ativo = :ativo
-WHERE idsistema = :idsistema;
+    nome = :nome
+  , categoria = :categoria
+  , descricao = :descricao
+  , ativo = :ativo
+WHERE idempresa = :idempresa
+  AND idsistema = :idsistema;

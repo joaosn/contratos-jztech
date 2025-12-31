@@ -1,5 +1,6 @@
-SELECT COUNT(*) as total
+SELECT COUNT(*) AS total
 FROM assinaturas a
-WHERE (:status IS NULL OR a.status = :status)
+WHERE a.idempresa = :idempresa
+  AND (:status IS NULL OR a.status = :status)
   AND (:idcliente IS NULL OR a.idcliente = :idcliente)
   AND (:idsistema IS NULL OR a.idsistema = :idsistema);

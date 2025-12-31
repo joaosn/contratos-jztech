@@ -1,2 +1,3 @@
 DELETE FROM sistemas_addons 
-WHERE idaddon = :idaddon;
+WHERE idempresa = :idempresa
+  AND idaddon = :idaddon;

@@ -1,8 +1,10 @@
 SELECT 
-    s.idsistema,
-    s.nome,
-    s.categoria,
-    s.descricao,
-    s.ativo
+    s.idsistema
+  , s.idempresa
+  , s.nome
+  , s.categoria
+  , s.descricao
+  , s.ativo
 FROM sistemas s
-WHERE s.idsistema = :idsistema;
+WHERE s.idempresa = :idempresa
+  AND s.idsistema = :idsistema;
