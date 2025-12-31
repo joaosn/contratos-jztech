@@ -1,4 +1,5 @@
 INSERT INTO clientes_contatos (
+    idempresa,
     idcliente,
     nome,
     email,
@@ -6,6 +7,7 @@ INSERT INTO clientes_contatos (
     cargo,
     principal
 ) VALUES (
+    :idempresa,
     :idcliente,
     :nome,
     :email,

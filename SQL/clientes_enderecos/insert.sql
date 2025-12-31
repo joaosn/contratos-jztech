@@ -1,4 +1,5 @@
 INSERT INTO clientes_enderecos (
+    idempresa,
     idcliente,
     tipo,
     logradouro,
@@ -11,6 +12,7 @@ INSERT INTO clientes_enderecos (
     pais,
     principal
 ) VALUES (
+    :idempresa,
     :idcliente,
     :tipo,
     :logradouro,

@@ -1,5 +1,6 @@
 SELECT 
     ce.idendereco,
+    ce.idempresa,
     ce.idcliente,
     ce.tipo,
     ce.logradouro,
@@ -12,5 +13,6 @@ SELECT
     ce.pais,
     ce.principal
 FROM clientes_enderecos ce
-WHERE ce.idcliente = :idcliente
+WHERE ce.idempresa = :idempresa
+  AND ce.idcliente = :idcliente
 ORDER BY ce.principal DESC, ce.tipo;

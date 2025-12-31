@@ -46,21 +46,26 @@
 
 ---
 
-## Fase 3: SQLs ⏳
+## Fase 3: SQLs ✅
 
 ### Novas pastas
-- [ ] SQL/empresa/ (7 arquivos)
-- [ ] SQL/usuarios/ (11 arquivos)
+- [x] SQL/empresa/ (7 arquivos)
+- [x] SQL/usuarios/ (12 arquivos)
 
 ### Ajustar SQLs existentes (adicionar idempresa)
-- [ ] SQL/clientes/ (9 arquivos)
-- [ ] SQL/sistemas/ (9 arquivos)
-- [ ] SQL/sistemas_planos/ (7 arquivos)
-- [ ] SQL/sistemas_addons/ (7 arquivos)
-- [ ] SQL/assinaturas/ (11 arquivos)
-- [ ] SQL/assinaturas_avancado/ (8 arquivos)
-- [ ] SQL/relatorios/ (6 arquivos)
-- [ ] SQL/precos_historico/ (6 arquivos)
+- [x] SQL/clientes/ (9 arquivos)
+- [x] SQL/clientes_enderecos/ (8 arquivos)
+- [x] SQL/clientes_contatos/ (8 arquivos)
+- [x] SQL/sistemas/ (9 arquivos)
+- [x] SQL/sistemas_planos/ (6 arquivos)
+- [x] SQL/sistemas_addons/ (6 arquivos)
+- [x] SQL/assinaturas/ (9 arquivos)
+- [x] SQL/assinaturas_addons/ (6 arquivos)
+- [x] SQL/assinaturas_avancado/ (9 arquivos)
+- [x] SQL/relatorios/ (6 arquivos)
+- [x] SQL/precos_historico/ (6 arquivos)
+- [x] SQL/indexes/ (1 arquivo)
+- [x] SQL/optimization/ (2 arquivos)
 
 ---
 
@@ -130,8 +135,8 @@
 | Fase | Status |
 |------|--------|
 | 1. Organização | ✅ 100% |
-| 2. DDL | ⏳ 0% |
-| 3. SQLs | ⏳ 0% |
+| 2. DDL | ✅ 100% |
+| 3. SQLs | ✅ 100% |
 | 4. Autenticação | ⏳ 0% |
 | 5. Controllers/Rotas | ⏳ 0% |
 | 6. Views | ⏳ 0% |

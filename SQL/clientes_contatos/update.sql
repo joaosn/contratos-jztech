@@ -4,4 +4,5 @@ UPDATE clientes_contatos SET
     telefone = :telefone,
     cargo = :cargo,
     principal = :principal
-WHERE idcontato = :idcontato;
+WHERE idempresa = :idempresa
+  AND idcontato = :idcontato;

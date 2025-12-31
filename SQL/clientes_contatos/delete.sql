@@ -1,2 +1,3 @@
 DELETE FROM clientes_contatos 
-WHERE idcontato = :idcontato;
+WHERE idempresa = :idempresa
+  AND idcontato = :idcontato;

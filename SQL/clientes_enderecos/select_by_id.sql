@@ -1,5 +1,6 @@
 SELECT 
     ce.idendereco,
+    ce.idempresa,
     ce.idcliente,
     ce.tipo,
     ce.logradouro,
@@ -12,4 +13,5 @@ SELECT
     ce.pais,
     ce.principal
 FROM clientes_enderecos ce
-WHERE ce.idendereco = :idendereco;
+WHERE ce.idempresa = :idempresa
+  AND ce.idendereco = :idendereco;

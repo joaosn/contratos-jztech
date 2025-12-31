@@ -1,28 +1,28 @@
 -- Registra mudança de plano com histórico de preços
--- Parâmetros: :idassinatura, :idplano_novo, :preco_anterior, :preco_novo, :tipo_mudanca
+-- Parâmetros: :idempresa, :idassinatura, :idplano_novo, :preco_anterior, :preco_novo, :idusuario, :tipo_mudanca
 INSERT INTO precos_historico (
+    idempresa,
     tipo_referencia,
-    referencia_id,
+    id_referencia,
     campo_alterado,
     valor_anterior,
     valor_novo,
     aliquota_anterior,
-    aliquota_novo,
-    usuario_id,
-    motivo_alteracao,
-    data_alteracao
+    aliquota_nova,
+    idusuario_alteracao,
+    motivo
 )
 SELECT 
-    'assinatura' as tipo_referencia,
-    :idassinatura as referencia_id,
-    'preco_negociado' as campo_alterado,
-    :preco_anterior as valor_anterior,
-    :preco_novo as valor_novo,
-    a.aliquota_imposto as aliquota_anterior,
-    sp.preco as aliquota_novo,
-    :usuario_id as usuario_id,
-    CONCAT(:tipo_mudanca, ' - Plano alterado') as motivo_alteracao,
-    NOW() as data_alteracao
+    :idempresa AS idempresa,
+    'assinatura' AS tipo_referencia,
+    :idassinatura AS id_referencia,
+    'preco_negociado' AS campo_alterado,
+    :preco_anterior AS valor_anterior,
+    :preco_novo AS valor_novo,
+    a.aliquota_imposto AS aliquota_anterior,
+    a.aliquota_imposto AS aliquota_nova,
+    :idusuario AS idusuario_alteracao,
+    CONCAT(:tipo_mudanca, ' - Plano alterado para ID ', :idplano_novo) AS motivo
 FROM assinaturas a
-INNER JOIN sistemas_planos sp ON sp.idplano = :idplano_novo
-WHERE a.idassinatura = :idassinatura;
+WHERE a.idempresa = :idempresa
+  AND a.idassinatura = :idassinatura;

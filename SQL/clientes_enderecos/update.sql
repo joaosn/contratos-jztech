@@ -9,4 +9,5 @@ UPDATE clientes_enderecos SET
     cep = :cep,
     pais = :pais,
     principal = :principal
-WHERE idendereco = :idendereco;
+WHERE idempresa = :idempresa
+  AND idendereco = :idendereco;

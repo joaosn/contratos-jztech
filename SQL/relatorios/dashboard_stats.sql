@@ -1,22 +1,31 @@
+-- Relatório: Estatísticas do Dashboard
+-- Parâmetros: :idempresa
 SELECT 
-    COUNT(DISTINCT c.idcliente) AS total_clientes,
-    COUNT(DISTINCT CASE WHEN c.ativo = 1 THEN c.idcliente END) AS clientes_ativos,
-    COUNT(DISTINCT s.idsistema) AS total_sistemas,
-    COUNT(DISTINCT CASE WHEN s.ativo = 1 THEN s.idsistema END) AS sistemas_ativos,
-    COUNT(DISTINCT a.idassinatura) AS total_assinaturas,
-    COUNT(DISTINCT CASE WHEN a.status = 'ativa' THEN a.idassinatura END) AS assinaturas_ativas,
-    COUNT(DISTINCT CASE WHEN a.status = 'suspensa' THEN a.idassinatura END) AS assinaturas_suspensas,
-    COUNT(DISTINCT CASE WHEN a.status = 'cancelada' THEN a.idassinatura END) AS assinaturas_canceladas,
-    ROUND(SUM(CASE WHEN a.status = 'ativa' THEN a.preco_sem_imposto * (1 + a.aliquota_imposto_percent/100) ELSE 0 END), 2) AS receita_mensal_total,
-    ROUND(SUM(CASE WHEN a.status = 'ativa' THEN COALESCE(aa_total.custo_addons, 0) ELSE 0 END), 2) AS receita_addons_total,
-    ROUND(AVG(CASE WHEN a.status = 'ativa' THEN a.preco_sem_imposto * (1 + a.aliquota_imposto_percent/100) ELSE NULL END), 2) AS ticket_medio
-FROM clientes c
-CROSS JOIN sistemas s
-LEFT JOIN assinaturas a ON c.idcliente = a.idcliente AND s.idsistema = a.idsistema
-LEFT JOIN (
-    SELECT 
-        idassinatura,
-        ROUND(SUM(COALESCE(preco_unitario, 0) * quantidade), 2) AS custo_addons
-    FROM assinaturas_addons
-    GROUP BY idassinatura
-) aa_total ON a.idassinatura = aa_total.idassinatura;
+    (SELECT COUNT(*) FROM clientes WHERE idempresa = :idempresa) AS total_clientes,
+    (SELECT COUNT(*) FROM clientes WHERE idempresa = :idempresa AND ativo = 1) AS clientes_ativos,
+    (SELECT COUNT(*) FROM sistemas WHERE idempresa = :idempresa) AS total_sistemas,
+    (SELECT COUNT(*) FROM sistemas WHERE idempresa = :idempresa AND ativo = 1) AS sistemas_ativos,
+    (SELECT COUNT(*) FROM assinaturas WHERE idempresa = :idempresa) AS total_assinaturas,
+    (SELECT COUNT(*) FROM assinaturas WHERE idempresa = :idempresa AND status = 'ativa') AS assinaturas_ativas,
+    (SELECT COUNT(*) FROM assinaturas WHERE idempresa = :idempresa AND status = 'suspensa') AS assinaturas_suspensas,
+    (SELECT COUNT(*) FROM assinaturas WHERE idempresa = :idempresa AND status = 'cancelada') AS assinaturas_canceladas,
+    (
+        SELECT ROUND(COALESCE(SUM(a.preco_negociado * (1 + a.aliquota_imposto/100)), 0), 2)
+        FROM assinaturas a
+        WHERE a.idempresa = :idempresa AND a.status = 'ativa'
+    ) AS receita_mensal_base,
+    (
+        SELECT ROUND(COALESCE(SUM(aa.preco_negociado * aa.quantidade), 0), 2)
+        FROM assinaturas_addons aa
+        INNER JOIN assinaturas a 
+            ON a.idempresa = aa.idempresa 
+           AND a.idassinatura = aa.idassinatura
+        WHERE aa.idempresa = :idempresa 
+          AND aa.ativo = 1 
+          AND a.status = 'ativa'
+    ) AS receita_addons_total,
+    (
+        SELECT ROUND(AVG(a.preco_negociado * (1 + a.aliquota_imposto/100)), 2)
+        FROM assinaturas a
+        WHERE a.idempresa = :idempresa AND a.status = 'ativa'
+    ) AS ticket_medio;

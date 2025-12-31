@@ -1,5 +1,6 @@
 SELECT 
     cc.idcontato,
+    cc.idempresa,
     cc.idcliente,
     cc.nome,
     cc.email,
@@ -7,4 +8,5 @@ SELECT
     cc.cargo,
     cc.principal
 FROM clientes_contatos cc
-WHERE cc.idcontato = :idcontato;
+WHERE cc.idempresa = :idempresa
+  AND cc.idcontato = :idcontato;
