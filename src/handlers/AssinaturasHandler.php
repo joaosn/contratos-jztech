@@ -32,6 +32,93 @@ class AssinaturasHandler {
     }
 
     /**
+     * Lista assinaturas com filtros e paginação
+     */
+    public function listarAssinaturas($filtros = []) {
+        // Validações de filtros
+        if (isset($filtros['status']) && !$this->validarStatus($filtros['status'])) {
+            throw new Exception("Status inválido. Valores permitidos: ativa, suspensa, cancelada, expirada");
+        }
+
+        // Paginação padrão
+        $filtros['limit'] = min($filtros['limit'] ?? 50, 100);
+        $filtros['offset'] = max($filtros['offset'] ?? 0, 0);
+
+        $assinaturas = $this->assinaturasModel->listarTodas($filtros);
+        $total = $this->assinaturasModel->contarTodas($filtros);
+
+        return [
+            'success' => true,
+            'data' => $assinaturas,
+            'total' => $total,
+            'pagination' => [
+                'limit' => $filtros['limit'],
+                'offset' => $filtros['offset'],
+                'has_more' => ($filtros['offset'] + $filtros['limit']) < $total
+            ]
+        ];
+    }
+
+    /**
+     * Busca assinatura por ID com add-ons
+     */
+    public function buscarAssinaturaCompleta($idassinatura) {
+        $assinatura = $this->assinaturasModel->buscarPorId($idassinatura);
+        
+        if (!$assinatura) {
+            throw new Exception("Assinatura não encontrada");
+        }
+
+        // Busca add-ons
+        $assinatura['addons'] = $this->assinaturasAddonsModel->listarPorAssinatura($idassinatura);
+
+        // Busca dados do cliente
+        $cliente = $this->clientesModel->buscarPorId($assinatura['idcliente']);
+        $assinatura['cliente'] = $cliente ? [
+            'idcliente' => $cliente['idcliente'],
+            'nome' => $cliente['nome'],
+            'cpf_cnpj' => $cliente['cpf_cnpj']
+        ] : null;
+
+        // Busca dados do sistema
+        $sistema = $this->sistemasModel->buscarPorId($assinatura['idsistema']);
+        $assinatura['sistema'] = $sistema ? [
+            'idsistema' => $sistema['idsistema'],
+            'nome' => $sistema['nome']
+        ] : null;
+
+        return [
+            'success' => true,
+            'data' => $assinatura
+        ];
+    }
+
+    /**
+     * Atualiza status da assinatura (público)
+     */
+    public function atualizarStatus($idassinatura, $novoStatus) {
+        return $this->alterarStatus($idassinatura, $novoStatus);
+    }
+
+    /**
+     * Lista add-ons da assinatura
+     */
+    public function listarAddons($idassinatura) {
+        // Verifica se assinatura existe
+        $assinatura = $this->assinaturasModel->buscarPorId($idassinatura);
+        if (!$assinatura) {
+            throw new Exception("Assinatura não encontrada");
+        }
+
+        $addons = $this->assinaturasAddonsModel->listarPorAssinatura($idassinatura);
+
+        return [
+            'success' => true,
+            'data' => $addons
+        ];
+    }
+
+    /**
      * Validações gerais de assinatura
      */
     private function validarAssinatura($dados, $isEdicao = false) {

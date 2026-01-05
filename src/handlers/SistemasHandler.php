@@ -276,6 +276,20 @@ class SistemasHandler {
     }
 
     /**
+     * Lista planos do sistema (alias para compatibilidade com Controller)
+     */
+    public function listarPlanos($idsistema, $filtros = []) {
+        return $this->listarPlanosSistema($idsistema, $filtros);
+    }
+
+    /**
+     * Lista add-ons do sistema (alias para compatibilidade com Controller)
+     */
+    public function listarAddons($idsistema, $filtros = []) {
+        return $this->listarAddonsSistema($idsistema, $filtros);
+    }
+
+    /**
      * Cria add-on para sistema
      */
     public function criarAddon($dados) {

@@ -159,14 +159,39 @@ class Controller
         return isset($_SESSION['empresa']) && $_SESSION['empresa']['controlar_estoque'] == 'true' ? true : false;
     }
 
-    public static function getUsuario()
+    /**
+     * Retorna ID do usuário logado
+     * @return int|null
+     */
+    public static function usuario()
     {
-        return $_SESSION['empresa']['iduser'];
+        return $_SESSION['idusuario'] ?? null;
     }
 
+    /**
+     * Retorna ID da empresa do usuário logado
+     * @return int|null
+     */
+    public static function empresa()
+    {
+        return $_SESSION['idempresa'] ?? null;
+    }
+
+    /**
+     * Alias para manter compatibilidade
+     * @deprecated Use usuario() e empresa()
+     */
+    public static function getUsuario()
+    {
+        return self::usuario();
+    }
+
+    /**
+     * @deprecated Use empresa()
+     */
     public static function getEmpresa()
     {
-        return $_SESSION['empresa']['idempresa'];
+        return self::empresa();
     }
 
     /**

@@ -225,4 +225,69 @@ class RelatoriosHandler {
             throw $e;
         }
     }
+
+    /**
+     * Relatório de clientes ativos
+     */
+    public function clientesAtivos($filtros = []) {
+        try {
+            $clientes = $this->relatoriosModel->clientesAtivos($filtros);
+            
+            return [
+                'success' => true,
+                'total' => count($clientes),
+                'data' => $clientes
+            ];
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Relatório de sistemas vendidos
+     */
+    public function sistemasVendidos() {
+        try {
+            $sistemas = $this->relatoriosModel->sistemasMaisVendidos();
+            
+            return [
+                'success' => true,
+                'total' => count($sistemas),
+                'data' => $sistemas
+            ];
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Relatório de receita por período
+     */
+    public function receitaPeriodo($dataInicio, $dataFim) {
+        try {
+            // Validar datas
+            if (strtotime($dataFim) <= strtotime($dataInicio)) {
+                throw new Exception("Data fim deve ser posterior à data início");
+            }
+
+            $dados = $this->relatoriosModel->totalMensal([
+                'data_inicio' => $dataInicio,
+                'data_fim' => $dataFim
+            ]);
+
+            $totalReceita = array_sum(array_column($dados, 'total_receita'));
+
+            return [
+                'success' => true,
+                'periodo' => [
+                    'inicio' => $dataInicio,
+                    'fim' => $dataFim
+                ],
+                'total_receita' => round($totalReceita, 2),
+                'detalhamento' => $dados
+            ];
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
 }

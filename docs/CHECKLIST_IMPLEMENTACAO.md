@@ -69,52 +69,58 @@
 
 ---
 
-## Fase 4: Autenticação ⏳
+## Fase 4: Autenticação ✅
 
-- [ ] Adicionar spomky-labs/otphp no composer
-- [ ] Renomear Users.php → Usuarios.php (Model)
-- [ ] Renomear User.php → Usuarios.php (Handler)
-- [ ] Criar TwoFactorAuthService.php
-- [ ] Atualizar Auth.php (validação tripla token)
-- [ ] Criar Model Empresa.php
-- [ ] Criar Handler EmpresaHandler.php
+- [x] Adicionar spomky-labs/otphp no composer (já existia)
+- [x] Criar UsuariosModel.php (novo Model)
+- [x] Criar UsuariosHandler.php (novo Handler)
+- [x] Criar TwoFactorAuthService.php
+- [x] Atualizar Auth.php (validação tripla token)
+- [x] Criar EmpresaModel.php
+- [x] Criar EmpresaHandler.php
+- [x] Atualizar Controller.php (empresa()/usuario())
+- [x] Refatorar LoginController.php
 
 ---
 
-## Fase 5: Controllers e Rotas ⏳
+## Fase 5: Controllers e Rotas ✅
 
 ### Novos Controllers
-- [ ] EmpresaController.php
-- [ ] UsuariosController.php
+- [x] EmpresaController.php
+- [x] UsuariosController.php
 
 ### Expandir Controllers (CRUD completo)
-- [ ] ClientesController
-- [ ] SistemasController
-- [ ] AssinaturasController
+- [x] ClientesController (listar, buscar, criar, atualizar, excluir, enderecos, contatos)
+- [x] SistemasController (listar, buscar, criar, atualizar, excluir, planos, addons)
+- [x] AssinaturasController (listar, buscar, criar, atualizar, excluir, status, addons)
+- [x] DashboardController (estatisticas, clientesAtivos, sistemasVendidos, receitaPeriodo)
 
 ### Rotas API em routes.php
-- [ ] /api/empresa/* (~6 rotas)
-- [ ] /api/usuarios/* (~8 rotas)
-- [ ] /api/clientes/* (~14 rotas)
-- [ ] /api/sistemas/* (~17 rotas)
-- [ ] /api/assinaturas/* (~14 rotas)
-- [ ] /api/relatorios/* (~5 rotas)
+- [x] /api/empresa/* (7 rotas)
+- [x] /api/usuarios/* (11 rotas)
+- [x] /api/clientes/* (7 rotas)
+- [x] /api/sistemas/* (7 rotas)
+- [x] /api/assinaturas/* (7 rotas)
+- [x] /api/relatorios/* (3 rotas)
 
 ---
 
-## Fase 6: Views (PHP/HTML) ⏳
+## Fase 6: Views (PHP/HTML) ✅
 
 ### Revisar existentes
-- [ ] login/index.php
-- [ ] dashboard/index.php
-- [ ] clientes/index.php
-- [ ] sistemas/index.php
-- [ ] assinaturas/index.php
+- [x] login/index.php (atualizado para OrganizaAI)
+- [x] dashboard/index.php (novo dashboard com estatísticas de assinaturas)
+- [x] clientes/index.php (existente)
+- [x] sistemas/index.php (existente)
+- [x] assinaturas/index.php (existente)
 
 ### Criar novas
-- [ ] empresa/index.php (config tenant)
-- [ ] usuarios/index.php
-- [ ] Modais/formulários CRUD
+- [x] empresa/index.php (config tenant com modal de edição)
+- [x] usuarios/index.php (gestão completa com 2FA)
+
+### Partials atualizados
+- [x] header.php (menu para OrganizaAI)
+- [x] footer.php (footer para OrganizaAI)
 
 ---
 
@@ -137,11 +143,11 @@
 | 1. Organização | ✅ 100% |
 | 2. DDL | ✅ 100% |
 | 3. SQLs | ✅ 100% |
-| 4. Autenticação | ⏳ 0% |
-| 5. Controllers/Rotas | ⏳ 0% |
-| 6. Views | ⏳ 0% |
+| 4. Autenticação | ✅ 100% |
+| 5. Controllers/Rotas | ✅ 100% |
+| 6. Views | ✅ 100% |
 | 7. Testes | ⏳ 0% |
 
 ---
 
-**Última atualização**: 31/12/2025
+**Última atualização**: 05/01/2026

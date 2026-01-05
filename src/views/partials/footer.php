@@ -3,7 +3,7 @@
 
         <footer class="footer-dark border-top mt-5 py-4">
             <div class="container text-center">
-                <p class="mb-1"><strong>MailJZTech</strong> - Serviço de Envio de E-mails</p>
+                <p class="mb-1"><strong>OrganizaAI</strong> - Gestão de Contratos e Assinaturas</p>
                 <p class="mb-2 small">Desenvolvido por <strong>JZ Tech Systems</strong></p>
                 <p class="mb-0 footer-copyright">&copy; 2025 Todos os direitos reservados.</p>
             </div>

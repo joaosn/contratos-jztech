@@ -311,6 +311,42 @@ class ClientesHandler {
     }
 
     /**
+     * Lista endereços do cliente
+     */
+    public function listarEnderecos($idcliente) {
+        // Verifica se cliente existe
+        $cliente = $this->clientesModel->buscarPorId($idcliente);
+        if (!$cliente) {
+            throw new Exception("Cliente não encontrado");
+        }
+
+        $enderecos = $this->enderecosModel->listarPorCliente($idcliente);
+
+        return [
+            'success' => true,
+            'data' => $enderecos
+        ];
+    }
+
+    /**
+     * Lista contatos do cliente
+     */
+    public function listarContatos($idcliente) {
+        // Verifica se cliente existe
+        $cliente = $this->clientesModel->buscarPorId($idcliente);
+        if (!$cliente) {
+            throw new Exception("Cliente não encontrado");
+        }
+
+        $contatos = $this->contatosModel->listarPorCliente($idcliente);
+
+        return [
+            'success' => true,
+            'data' => $contatos
+        ];
+    }
+
+    /**
      * Validações privadas
      */
     private function validarDadosCliente($dados) {
